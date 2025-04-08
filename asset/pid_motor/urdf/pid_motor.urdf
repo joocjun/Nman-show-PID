@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="pid_motor">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.0011919090998665 8.60277120514109E-05 0.053406401158104"
+        rpy="0 0 0" />
+      <mass
+        value="1.43119045038721" />
+      <inertia
+        ixx="0.00123992001862071"
+        ixy="1.98017854190882E-06"
+        ixz="-3.56224412783141E-06"
+        iyy="0.000771011384393413"
+        iyz="-2.46188566831584E-06"
+        izz="0.000811184428285593" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://pid_motor/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://pid_motor/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="link1">
+    <inertial>
+      <origin
+        xyz="0.00250000000000021 2.02799762732284E-14 0.0540837186247057"
+        rpy="0 0 0" />
+      <mass
+        value="0.0152768682810347" />
+      <inertia
+        ixx="2.11136924311941E-05"
+        ixy="2.66621341721384E-21"
+        ixz="-7.07787738139709E-20"
+        iyy="2.03502970209824E-05"
+        iyz="3.22699294917814E-22"
+        izz="8.27049028049368E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://pid_motor/meshes/link1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://pid_motor/meshes/link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint1"
+    type="revolute">
+    <origin
+      xyz="0.0154890559226487 0 0.055500000000006"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="link1" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.5708"
+      upper="1.5708"
+      effort="5"
+      velocity="10.0" />
+  </joint>
+</robot>
