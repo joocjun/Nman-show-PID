@@ -100,7 +100,7 @@ while p.isConnected():
                             targetPosition=pos,
                             targetVelocity=vel,
                             positionGain=timeStep * (kp / 150.),
-                            velocityGain=0.5,
+                            velocityGain=0.01,
                             force=max_force)
 
     if not useRealTimeSim:
