@@ -9,7 +9,9 @@ import os
 import pybullet_data
 
 from pdControllerExplicit import PDControllerExplicit
-from pdControllerStable import PDControllerStable
+
+# from pdControllerStable import PDControllerStable
+from pdControllerStableAnswer import PDControllerStable
 
 # Setup
 useMaximalCoordinates = False
@@ -22,8 +24,8 @@ p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
 # Set camera zoom and position
 camera_distance = 5 / 7
-camera_yaw = 50
-camera_pitch = -35
+camera_yaw = 90
+camera_pitch = -25
 camera_target_position = [0, 0, 0]
 
 p.resetDebugVisualizerCamera(
@@ -35,7 +37,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 custom_urdf_path = os.path.join(script_dir, "../asset/pid_motor/urdf/pid_motor.urdf")
 
 # Load 4 instances for comparison
-start_positions = [[-0.3, 0, 0], [-0.1, 0, 0], [0.1, 0, 0], [0.3, 0, 0]]
+start_positions = [[0, -0.2, 0], [0, 0.2, 0]]
 robots = [
     p.loadURDF(
         custom_urdf_path,
@@ -46,7 +48,7 @@ robots = [
     )
     for pos in start_positions
 ]
-pole_explicit, pole_stable, pole_plugin, pole_constraint = robots
+pole_explicit, pole_stable = robots
 
 # Controllers
 explicitPD = PDControllerExplicit(p)
@@ -82,20 +84,6 @@ p.addUserDebugText(
     [0, 0, 0.1],
     [1, 1, 1],
     parentObjectUniqueId=pole_stable,
-    parentLinkIndex=0,
-)
-p.addUserDebugText(
-    "Plugin PD",
-    [0, 0, 0.1],
-    [1, 1, 1],
-    parentObjectUniqueId=pole_plugin,
-    parentLinkIndex=0,
-)
-p.addUserDebugText(
-    "Constraint PD",
-    [0, 0, 0.1],
-    [1, 1, 1],
-    parentObjectUniqueId=pole_constraint,
     parentLinkIndex=0,
 )
 
@@ -140,32 +128,6 @@ while p.isConnected():
     p.setJointMotorControl2(
         pole_stable, 0, controlMode=p.TORQUE_CONTROL, force=tau_stable[0]
     )
-
-    # Plugin PD
-    if plugin_id >= 0:
-        p.setJointMotorControl2(
-            pole_plugin,
-            0,
-            controlMode=p.PD_CONTROL,
-            targetPosition=pos,
-            targetVelocity=vel,
-            force=max_force,
-            positionGain=kp,
-            velocityGain=kd,
-        )
-
-    # Constraint-based PD
-    p.setJointMotorControl2(
-        pole_constraint,
-        0,
-        controlMode=p.POSITION_CONTROL,
-        targetPosition=pos,
-        targetVelocity=vel,
-        positionGain=timeStep * (kp / 150.0),
-        velocityGain=0.01,
-        force=max_force,
-    )
-
     if not useRealTimeSim:
         p.stepSimulation()
         time.sleep(timeStep)
