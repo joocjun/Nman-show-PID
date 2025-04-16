@@ -7,16 +7,20 @@ import pybullet as p
 import time
 import os
 import pybullet_data
+import math
 
 from pdControllerExplicit import PDControllerExplicit
 
 # from pdControllerStable import PDControllerStable
 from pdControllerStableAnswer import PDControllerStable
 
-# Setup
+# Setup static parameters
 useMaximalCoordinates = False
 useRealTimeSim = False
+# NOTE Assume controller timestep is enough.
 timeStep = 0.001
+vel = 0.0
+max_force = 10.0
 
 # PyBullet connect
 p.connect(p.GUI)
@@ -36,7 +40,6 @@ p.resetDebugVisualizerCamera(
 script_dir = os.path.dirname(os.path.abspath(__file__))
 custom_urdf_path = os.path.join(script_dir, "../asset/pid_motor/urdf/pid_motor.urdf")
 
-# Load 4 instances for comparison
 start_positions = [[0, -0.2, 0], [0, 0.2, 0]]
 robots = [
     p.loadURDF(
@@ -64,12 +67,9 @@ p.setTimeStep(timeStep)
 p.setRealTimeSimulation(useRealTimeSim)
 
 # UI sliders
-timeStepId = p.addUserDebugParameter("timeStep", 0.001, 0.01, timeStep)
-desiredPosId = p.addUserDebugParameter("desiredPosition", -1.57, 1.57, 0)
-desiredVelId = p.addUserDebugParameter("desiredVelocity", -5.0, 5.0, 0)
-kpId = p.addUserDebugParameter("Kp", 0, 100, 50)
-kdId = p.addUserDebugParameter("Kd", 0, 0.5, 0.02)
-maxForceId = p.addUserDebugParameter("Max Force", 0, 100, 10)
+desiredPosId = p.addUserDebugParameter("desiredPosition", -20, 20, 0)
+kpId = p.addUserDebugParameter("Kp", 0, 100, 1.8)
+kdId = p.addUserDebugParameter("Kd", 0, 1.0, 0.5)
 
 # Debug labels
 p.addUserDebugText(
@@ -87,17 +87,15 @@ p.addUserDebugText(
     parentLinkIndex=0,
 )
 
+
 # Main loop
 while p.isConnected():
-    timeStep = p.readUserDebugParameter(timeStepId)
-    p.setTimeStep(timeStep)
+    p.setTimeStep(timeStep)  # sim timestep
 
     # Slider values
-    pos = p.readUserDebugParameter(desiredPosId)
-    vel = p.readUserDebugParameter(desiredVelId)
+    pos = p.readUserDebugParameter(desiredPosId) * math.pi / 180.0
     kp = p.readUserDebugParameter(kpId)
     kd = p.readUserDebugParameter(kdId)
-    max_force = p.readUserDebugParameter(maxForceId)
 
     # Explicit PD
     tau_exp = explicitPD.computePD(
