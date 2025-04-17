@@ -86,9 +86,9 @@ p.setRealTimeSimulation(useRealTimeSim)
 
 # UI sliders
 desiredPosId = p.addUserDebugParameter("desiredPosition", -20, 20, 0)
-kpId = p.addUserDebugParameter("Kp", 3.0, 20.0, 9.0)
-kdId = p.addUserDebugParameter("Kd", 0, 0.5, 0.025)
-kiId = p.addUserDebugParameter("Ki", 0, 0.25, 0.01)
+kpId = p.addUserDebugParameter("Kp", 3.0, 20.0, 1.0)
+kdId = p.addUserDebugParameter("Kd", 0, 0.5, 0.05)
+kiId = p.addUserDebugParameter("Ki", 0, 0.5, 0.1)
 
 # Debug labels
 p.addUserDebugText(
