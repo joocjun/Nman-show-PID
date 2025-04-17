@@ -8,19 +8,38 @@ import time
 import os
 import pybullet_data
 import math
+import matplotlib.pyplot as plt
+import numpy as np
 
 from pdControllerExplicit import PDControllerExplicit
-
-# from pdControllerStable import PDControllerStable
+from pidControllerExplicit import PIDControllerExplicit
 from pdControllerStableAnswer import PDControllerStable
 
 # Setup static parameters
 useMaximalCoordinates = False
 useRealTimeSim = False
-# NOTE Assume controller timestep is enough.
 timeStep = 0.001
 vel = 0.0
 max_force = 10.0
+
+# Initialize plotting
+plt.ion()
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.set_xlabel("Time (s)")
+ax.set_ylabel("Absolute Error (rad)")
+ax.set_title("Controller Performance Comparison")
+ax.grid(True)
+
+# Data storage for plotting
+sim_time = []
+desired_poses = []
+errors_pd = []
+errors_pid = []
+errors_stable = []
+(line_pd,) = ax.plot([], [], "r-", label="Explicit PD")
+(line_pid,) = ax.plot([], [], "g-", label="Explicit PID")
+(line_stable,) = ax.plot([], [], "b-", label="Stable PD")
+ax.legend()
 
 # PyBullet connect
 p.connect(p.GUI)
@@ -31,7 +50,6 @@ camera_distance = 5 / 7
 camera_yaw = 90
 camera_pitch = -25
 camera_target_position = [0, 0, 0]
-
 p.resetDebugVisualizerCamera(
     camera_distance, camera_yaw, camera_pitch, camera_target_position
 )
@@ -40,7 +58,7 @@ p.resetDebugVisualizerCamera(
 script_dir = os.path.dirname(os.path.abspath(__file__))
 custom_urdf_path = os.path.join(script_dir, "../asset/pid_motor/urdf/pid_motor.urdf")
 
-start_positions = [[0, -0.2, 0], [0, 0.2, 0]]
+start_positions = [[0, -0.3, 0], [0, 0.0, 0], [0, 0.3, 0]]
 robots = [
     p.loadURDF(
         custom_urdf_path,
@@ -51,12 +69,12 @@ robots = [
     )
     for pos in start_positions
 ]
-pole_explicit, pole_stable = robots
+pole_explicit_pd, pole_explicit_pid, pole_stable = robots
 
 # Controllers
 explicitPD = PDControllerExplicit(p)
+explicitPID = PIDControllerExplicit(p)
 stablePD = PDControllerStable(p)
-plugin_id = p.loadPlugin("pdControlPlugin")
 
 # Disable default motors
 for robot_id in robots:
@@ -69,14 +87,22 @@ p.setRealTimeSimulation(useRealTimeSim)
 # UI sliders
 desiredPosId = p.addUserDebugParameter("desiredPosition", -20, 20, 0)
 kpId = p.addUserDebugParameter("Kp", 0, 100, 1.8)
-kdId = p.addUserDebugParameter("Kd", 0, 1.0, 0.5)
+kdId = p.addUserDebugParameter("Kd", 0, 1.0, 0.05)
+kiId = p.addUserDebugParameter("Ki", 0, 1.0, 0.05)
 
 # Debug labels
 p.addUserDebugText(
     "Explicit PD",
     [0, 0, 0.1],
     [1, 1, 1],
-    parentObjectUniqueId=pole_explicit,
+    parentObjectUniqueId=pole_explicit_pd,
+    parentLinkIndex=0,
+)
+p.addUserDebugText(
+    "Explicit PID",
+    [0, 0, 0.1],
+    [1, 1, 1],
+    parentObjectUniqueId=pole_explicit_pid,
     parentLinkIndex=0,
 )
 p.addUserDebugText(
@@ -87,45 +113,111 @@ p.addUserDebugText(
     parentLinkIndex=0,
 )
 
+# Initialize time tracking
+start_time = time.time()
+current_time = 0
 
 # Main loop
-while p.isConnected():
-    p.setTimeStep(timeStep)  # sim timestep
+try:
+    while p.isConnected():
+        p.setTimeStep(timeStep)  # sim timestep
 
-    # Slider values
-    pos = p.readUserDebugParameter(desiredPosId) * math.pi / 180.0
-    kp = p.readUserDebugParameter(kpId)
-    kd = p.readUserDebugParameter(kdId)
+        # Slider values
+        desired_pos = p.readUserDebugParameter(desiredPosId) * math.pi / 180.0
+        kp = p.readUserDebugParameter(kpId)
+        kd = p.readUserDebugParameter(kdId)
+        ki = p.readUserDebugParameter(kiId)
 
-    # Explicit PD
-    tau_exp = explicitPD.computePD(
-        pole_explicit,
-        jointIndices=[0],
-        desiredPositions=[pos],
-        desiredVelocities=[vel],
-        kps=[kp],
-        kds=[kd],
-        maxForces=[max_force],
-        timeStep=timeStep,
-    )
-    p.setJointMotorControl2(
-        pole_explicit, 0, controlMode=p.TORQUE_CONTROL, force=tau_exp[0]
-    )
+        # Get current positions
+        state_pd = p.getJointState(pole_explicit_pd, 0)
+        state_pid = p.getJointState(pole_explicit_pid, 0)
+        state_stable = p.getJointState(pole_stable, 0)
 
-    # Stable PD
-    tau_stable = stablePD.computePD(
-        pole_stable,
-        jointIndices=[0],
-        desiredPositions=[pos],
-        desiredVelocities=[vel],
-        kps=[kp],
-        kds=[kd],
-        maxForces=[max_force],
-        timeStep=timeStep,
-    )
-    p.setJointMotorControl2(
-        pole_stable, 0, controlMode=p.TORQUE_CONTROL, force=tau_stable[0]
-    )
-    if not useRealTimeSim:
-        p.stepSimulation()
-        time.sleep(timeStep)
+        # Calculate errors
+        error_pd = abs(desired_pos - state_pd[0])
+        error_pid = abs(desired_pos - state_pid[0])
+        error_stable = abs(desired_pos - state_stable[0])
+
+        # Store data for plotting
+        current_time = time.time() - start_time
+        sim_time.append(current_time)
+        desired_poses.append(desired_pos)
+        errors_pd.append(error_pd)
+        errors_pid.append(error_pid)
+        errors_stable.append(error_stable)
+
+        # Update plot every 100 steps for performance
+        if len(sim_time) % 100 == 0:
+            line_pd.set_data(sim_time, errors_pd)
+            line_pid.set_data(sim_time, errors_pid)
+            line_stable.set_data(sim_time, errors_stable)
+            ax.relim()
+            ax.autoscale_view()
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+
+        # Explicit PD
+        tau_exp = explicitPD.computePD(
+            pole_explicit_pd,
+            jointIndices=[0],
+            desiredPositions=[desired_pos],
+            desiredVelocities=[vel],
+            kps=[kp],
+            kds=[kd],
+            maxForces=[max_force],
+            timeStep=timeStep,
+        )
+        p.setJointMotorControl2(
+            pole_explicit_pd, 0, controlMode=p.TORQUE_CONTROL, force=tau_exp[0]
+        )
+
+        # Explicit PID
+        tau_exp_pid = explicitPID.computePID(
+            pole_explicit_pid,
+            jointIndices=[0],
+            desiredPositions=[desired_pos],
+            desiredVelocities=[vel],
+            kps=[kp],
+            kis=[ki],
+            kds=[kd],
+            maxForces=[max_force],
+            timeStep=timeStep,
+        )
+        p.setJointMotorControl2(
+            pole_explicit_pid, 0, controlMode=p.TORQUE_CONTROL, force=tau_exp_pid[0]
+        )
+
+        # Stable PD
+        tau_stable = stablePD.computePD(
+            pole_stable,
+            jointIndices=[0],
+            desiredPositions=[desired_pos],
+            desiredVelocities=[vel],
+            kps=[kp],
+            kds=[kd],
+            maxForces=[max_force],
+            timeStep=timeStep,
+        )
+        p.setJointMotorControl2(
+            pole_stable, 0, controlMode=p.TORQUE_CONTROL, force=tau_stable[0]
+        )
+
+        if not useRealTimeSim:
+            p.stepSimulation()
+            time.sleep(timeStep)
+except:
+    # Final plot when simulation ends
+    # plt.ioff()
+    plt.figure(figsize=(10, 6))
+    plt.plot(sim_time, desired_poses, label="Desired pos")
+    plt.plot(sim_time, errors_pd, "r-", label="Explicit PD")
+    plt.plot(sim_time, errors_pid, "g-", label="Explicit PID")
+    plt.plot(sim_time, errors_stable, "b-", label="Stable PD")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Absolute Error (rad)")
+    plt.title("Controller Performance Comparison")
+    plt.legend()
+    plt.grid(True)
+    os.makedirs("examples/plot", exist_ok=True)
+    plt.savefig("examples/plot/simulation_result.png")
+    plt.close()
