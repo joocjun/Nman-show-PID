@@ -118,9 +118,6 @@ class PIDControllerExplicitMultiDof(object):
         return forces
 
 
-from icecream import ic
-
-
 class PIDControllerExplicit(object):
 
     def __init__(self, pb):
