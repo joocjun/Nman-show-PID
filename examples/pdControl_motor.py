@@ -86,9 +86,9 @@ p.setRealTimeSimulation(useRealTimeSim)
 
 # UI sliders
 desiredPosId = p.addUserDebugParameter("desiredPosition", -20, 20, 0)
-kpId = p.addUserDebugParameter("Kp", 0, 100, 1.8)
-kdId = p.addUserDebugParameter("Kd", 0, 1.0, 0.05)
-kiId = p.addUserDebugParameter("Ki", 0, 1.0, 0.05)
+kpId = p.addUserDebugParameter("Kp", 3.0, 20.0, 9.0)
+kdId = p.addUserDebugParameter("Kd", 0, 0.5, 0.025)
+kiId = p.addUserDebugParameter("Ki", 0, 0.25, 0.01)
 
 # Debug labels
 p.addUserDebugText(
@@ -116,6 +116,7 @@ p.addUserDebugText(
 # Initialize time tracking
 start_time = time.time()
 current_time = 0
+step = 0
 
 # Main loop
 try:
@@ -145,16 +146,6 @@ try:
         errors_pd.append(error_pd)
         errors_pid.append(error_pid)
         errors_stable.append(error_stable)
-
-        # Update plot every 100 steps for performance
-        if len(sim_time) % 100 == 0:
-            line_pd.set_data(sim_time, errors_pd)
-            line_pid.set_data(sim_time, errors_pid)
-            line_stable.set_data(sim_time, errors_stable)
-            ax.relim()
-            ax.autoscale_view()
-            fig.canvas.draw()
-            fig.canvas.flush_events()
 
         # Explicit PD
         tau_exp = explicitPD.computePD(
@@ -205,11 +196,12 @@ try:
         if not useRealTimeSim:
             p.stepSimulation()
             time.sleep(timeStep)
+            step += 1
 except:
     # Final plot when simulation ends
-    # plt.ioff()
+    plt.ioff()
     plt.figure(figsize=(10, 6))
-    plt.plot(sim_time, desired_poses, label="Desired pos")
+    # plt.plot(sim_time, desired_poses, label="Desired pos")
     plt.plot(sim_time, errors_pd, "r-", label="Explicit PD")
     plt.plot(sim_time, errors_pid, "g-", label="Explicit PID")
     plt.plot(sim_time, errors_stable, "b-", label="Stable PD")

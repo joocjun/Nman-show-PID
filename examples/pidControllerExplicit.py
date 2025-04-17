@@ -118,6 +118,9 @@ class PIDControllerExplicitMultiDof(object):
         return forces
 
 
+from icecream import ic
+
+
 class PIDControllerExplicit(object):
 
     def __init__(self, pb):
@@ -136,19 +139,14 @@ class PIDControllerExplicit(object):
         maxForces,
         timeStep,
     ):
-
         # Initialize integral errors if not present
         if bodyUniqueId not in self.integral_errors:
             self.integral_errors[bodyUniqueId] = {
                 "position": np.zeros(len(desiredPositions)),
-                "last_time": timeStep
-                * self._pb.getPhysicsEngineParameters()["numSubSteps"],
             }
 
         integral_data = self.integral_errors[bodyUniqueId]
-        current_time = timeStep * self._pb.getPhysicsEngineParameters()["numSubSteps"]
-        dt = current_time - integral_data["last_time"]
-        integral_data["last_time"] = current_time
+        dt = timeStep
 
         numJoints = self._pb.getNumJoints(bodyUniqueId)
         jointStates = self._pb.getJointStates(bodyUniqueId, jointIndices)
