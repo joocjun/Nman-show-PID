@@ -84,9 +84,9 @@ p.setRealTimeSimulation(useRealTimeSim)
 ######################################################
 # Change the parameters to your needs
 desiredPosId = p.addUserDebugParameter("desiredPosition", -20, 20, 0)
-kpId = p.addUserDebugParameter("Kp", 3.0, 20.0, 1.0)
-kdId = p.addUserDebugParameter("Kd", 0, 0.5, 0.05)
-kiId = p.addUserDebugParameter("Ki", 0, 0.5, 0.01)
+kpId = p.addUserDebugParameter("Kp", 0, 20.0, 9.0)
+kiId = p.addUserDebugParameter("Ki", 0, 0.5, 0)
+kdId = p.addUserDebugParameter("Kd", 0, 0.5, 0)
 ######################################################
 
 # Debug labels
