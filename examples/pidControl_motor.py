@@ -67,7 +67,7 @@ robots = [
     )
     for pos in start_positions
 ]
-pole_explicit_pid = robots
+pole_explicit_pid = robots[0]
 
 # Controllers
 explicitPID = PIDControllerExplicit(p)
